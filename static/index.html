@@ -72,7 +72,7 @@ function prepEntity(entity) {
 function clearFrame() {
     with(context) {
 	moveTo(0,0);
-	fillStyle = "#000";
+	fillStyle = "#fff";
 	fillRect(0,0,W,H);
     }
 
@@ -130,6 +130,7 @@ var counter = 0;
 function addEntityWithoutName(data) {
     var name = "X"+(counter++)%100;
     addEntity(name,data);
+    socket.send(JSON.stringify({[name]: data}))
 }
 
 // canvas + mouse/touch is complicated 
@@ -253,7 +254,10 @@ function wsSetup() {
     var url = "ws://"+host+"/subscribe";   
     socket = new WebSocket(url);
     socket.onopen = function() {
-        //XXX: TODO What are you going to do here?
+        for (let entity in world) {
+            let packet = JSON.stringify({[entity]: world[entity]})
+            socket.send(packet)
+        }
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
@@ -261,7 +265,11 @@ function wsSetup() {
     socket.onmessage = function(msg) {  
         try {
             debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            let items = JSON.parse(msg.data)
+            for (let entity in items) {
+                world[entity] = items[entity];
+            }
+            drawNextFrame();
         } catch (e) {
             alert("socket on message: " + e);
         }
